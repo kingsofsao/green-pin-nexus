@@ -8,6 +8,8 @@ import { AlertOctagon, CheckCircle2, ShieldAlert, Zap, History, MessageSquare, P
 export default function ResponseCenter() {
   const [criticalEvent, setCriticalEvent] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const [voiceLoading, setVoiceLoading] = useState(false);
+  const [voiceError, setVoiceError] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
   
   // Response Confirmation Modal State
@@ -98,6 +100,41 @@ export default function ResponseCenter() {
     setLoading(false);
   };
 
+  const handleVoiceAlert = async () => {
+    setVoiceLoading(true);
+    setVoiceError(null);
+
+    try {
+      const event = criticalEvent;
+      const eventDescription = event
+        ? `Critical security alert. High risk privileged operation detected. Event ${event.id}. User ${event.userId}. Action ${event.action}. Risk score ${event.riskScore}.`
+        : 'Critical security alert. No active threat is currently waiting in the response queue.';
+
+      const blob = await api.playSecurityVoiceAlert(eventDescription);
+      const audioUrl = URL.createObjectURL(blob);
+      const audio = new Audio(audioUrl);
+
+      audio.onended = () => {
+        URL.revokeObjectURL(audioUrl);
+        setVoiceLoading(false);
+      };
+
+      audio.onerror = () => {
+        URL.revokeObjectURL(audioUrl);
+        setVoiceLoading(false);
+        setVoiceError('The browser could not play the generated voice alert.');
+      };
+
+      await audio.play();
+    } catch (err) {
+      console.error(err);
+      setVoiceLoading(false);
+      setVoiceError(
+        err instanceof Error ? err.message : 'Voice alert failed.'
+      );
+    }
+  };
+
   const handleFeedbackSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!criticalEvent) return;
@@ -141,6 +178,38 @@ export default function ResponseCenter() {
           </button>
         </div>
       </div>
+
+      {/* ELEVENLABS VOICE ALERT */}
+      <Card className="border-red-500/30 bg-red-950/10">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <div className="text-lg">🔊</div>
+              <h2 className="text-sm font-bold text-slate-100 uppercase tracking-wider">
+                ELEVENLABS VOICE ALERT
+              </h2>
+            </div>
+            <p className="text-xs text-slate-400">
+              Generate an audible warning for the current privileged-access security event.
+            </p>
+          </div>
+
+          <button
+            onClick={handleVoiceAlert}
+            disabled={voiceLoading}
+            className="inline-flex items-center justify-center gap-2 bg-red-600 hover:bg-red-500 text-white px-4 py-2.5 rounded-lg font-bold text-xs transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Play size={15} />
+            {voiceLoading ? 'Generating Alert...' : 'Play Voice Alert'}
+          </button>
+        </div>
+
+        {voiceError && (
+          <div className="mt-3 text-xs text-red-400 border-t border-red-500/20 pt-3">
+            {voiceError}
+          </div>
+        )}
+      </Card>
 
       {feedback && (
         <div className="bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 px-5 py-3.5 rounded-lg flex items-center gap-3 shadow-lg animate-fade-in text-sm font-semibold">

@@ -47,7 +47,7 @@ export default function Overview() {
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 font-[Inter]">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight mb-1">GOOD EVENING, ANANYA</h1>
+          <h1 className="text-3xl font-bold tracking-tight mb-1">GOOD MORNING, ANANYA</h1>
           <h2 className="text-lg font-semibold text-primary uppercase tracking-widest font-mono mb-2">
             PRIVILEGED SECURITY OVERVIEW
           </h2>

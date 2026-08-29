@@ -1,3 +1,6 @@
+from ..services.elevenlabs_service import generate_security_alert_audio
+from fastapi import HTTPException
+from fastapi.responses import Response
 from fastapi import APIRouter, HTTPException, Depends
 from typing import List, Dict, Any, Optional
 from ..database import get_db
@@ -715,3 +718,33 @@ def get_audit_logs(conn: sqlite3.Connection = Depends(db_conn)):
 def record_audit(req: RecordAuditRequest, conn: sqlite3.Connection = Depends(db_conn)):
     insert_audit_log(conn, "SUP-001", req.action, req.target, req.details)
     return {"status": "success"}
+
+
+class VoiceAlertRequest(BaseModel):
+    text: str
+    voice_id: str | None = None
+
+
+@router.post("/security-alert/voice")
+async def security_alert_voice(request: VoiceAlertRequest):
+    text = request.text.strip()
+
+    if not text:
+        raise HTTPException(status_code=400, detail="Alert text cannot be empty.")
+
+    if len(text) > 1000:
+        raise HTTPException(status_code=400, detail="Alert text is too long.")
+
+    audio = await generate_security_alert_audio(
+        text=text,
+        voice_id=request.voice_id,
+    )
+
+    return Response(
+        content=audio,
+        media_type="audio/mpeg",
+        headers={
+            "Content-Disposition": 'inline; filename="security-alert.mp3"',
+            "Cache-Control": "no-store",
+        },
+    )
