@@ -1,8 +1,5 @@
 fastapi
+uvicorn[standard]
 pydantic
 bcrypt
 networkx
-httpx>=0.27.0
-python-dotenv
-uvicorn[standard]
-
